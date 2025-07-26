@@ -105,15 +105,21 @@ const Home = () => {
   // Check for user session on mount
   useEffect(() => {
     const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      setLoading(false);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setUser(session?.user || null);
 
-      if (session?.user) {
-        await fetchUserData(session.user.id);
-        await fetchPlayerPets(session.user.id);
+        if (session?.user) {
+          await fetchUserData(session.user.id);
+          await fetchPlayerPets(session.user.id);
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -123,14 +129,22 @@ const Home = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user || null);
-      if (session?.user) {
-        await fetchUserData(session.user.id);
-        await fetchPlayerPets(session.user.id);
-      } else {
-        setUserData(null);
-        setPlayerPets([]);
-        setActivePet(null);
+      try {
+        setUser(session?.user || null);
+        if (session?.user) {
+          setLoading(true);
+          await fetchUserData(session.user.id);
+          await fetchPlayerPets(session.user.id);
+          setLoading(false);
+        } else {
+          setUserData(null);
+          setPlayerPets([]);
+          setActivePet(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error in auth state change:", error);
+        setLoading(false);
       }
     });
 
@@ -154,9 +168,13 @@ const Home = () => {
         setUserData(data as UserData);
       } else {
         // Create new user profile if it doesn't exist
+        const currentUser = await supabase.auth.getUser();
         const newUser = {
           id: userId,
-          username: user?.user_metadata?.username || "New Player",
+          username:
+            currentUser.data.user?.user_metadata?.username ||
+            currentUser.data.user?.email?.split("@")[0] ||
+            "New Player",
           level: 1,
           xp: 0,
           coins: 100,
@@ -181,6 +199,19 @@ const Home = () => {
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
+      // Set default user data if there's an error
+      const currentUser = await supabase.auth.getUser();
+      setUserData({
+        id: userId,
+        username: currentUser.data.user?.email?.split("@")[0] || "New Player",
+        level: 1,
+        xp: 0,
+        coins: 100,
+        energy: 5,
+        max_energy: 5,
+        high_score: 0,
+        total_games_played: 0,
+      });
     }
   };
 
