@@ -74,22 +74,26 @@ const AuthForm = ({ onAuthSuccess = () => {} }: AuthFormProps) => {
     setAuthError(null);
 
     try {
-      // In a real implementation, this would use the actual Supabase client
-      // const { error } = await supabase.auth.signInWithPassword({
-      //   email: data.email,
-      //   password: data.password,
-      // });
+      const supabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+      );
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
 
-      // Simulate successful login
-      console.log("Login successful:", data);
+      if (error) {
+        throw error;
+      }
+
       onAuthSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
       setAuthError(
-        "Failed to login. Please check your credentials and try again.",
+        error.message ||
+          "Failed to login. Please check your credentials and try again.",
       );
     } finally {
       setIsLoading(false);
@@ -102,26 +106,32 @@ const AuthForm = ({ onAuthSuccess = () => {} }: AuthFormProps) => {
     setAuthError(null);
 
     try {
-      // In a real implementation, this would use the actual Supabase client
-      // const { error } = await supabase.auth.signUp({
-      //   email: data.email,
-      //   password: data.password,
-      //   options: {
-      //     data: {
-      //       username: data.username,
-      //     },
-      //   },
-      // });
+      const supabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+      );
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            username: data.username,
+          },
+        },
+      });
 
-      // Simulate successful registration
-      console.log("Registration successful:", data);
+      if (error) {
+        throw error;
+      }
+
       setActiveTab("login");
-    } catch (error) {
+      setAuthError(null);
+    } catch (error: any) {
       console.error("Registration error:", error);
-      setAuthError("Failed to register. Please try again later.");
+      setAuthError(
+        error.message || "Failed to register. Please try again later.",
+      );
     } finally {
       setIsLoading(false);
     }

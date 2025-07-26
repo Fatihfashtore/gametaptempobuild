@@ -87,6 +87,10 @@ interface PlayerDashboardProps {
     score: number;
     avatarUrl: string;
   }>;
+  onPurchaseEnergy?: (energyAmount: number, cost: number) => void;
+  onGachaPull?: (cost: number) => void;
+  onSendCoins?: (friendId: string, amount: number) => void;
+  onSendPet?: (friendId: string, playerPetId: string) => void;
 }
 
 const PlayerDashboard: React.FC<PlayerDashboardProps> = ({
@@ -184,6 +188,10 @@ const PlayerDashboard: React.FC<PlayerDashboardProps> = ({
       avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=leader5",
     },
   ],
+  onPurchaseEnergy = () => {},
+  onGachaPull = () => {},
+  onSendCoins = () => {},
+  onSendPet = () => {},
 }) => {
   const [selectedPet, setSelectedPet] = useState<string | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
@@ -450,7 +458,14 @@ const PlayerDashboard: React.FC<PlayerDashboardProps> = ({
                     >
                       Cancel
                     </Button>
-                    <Button className="flex items-center gap-2">
+                    <Button
+                      className="flex items-center gap-2"
+                      onClick={() => {
+                        onGachaPull(100);
+                        setIsGachaDialogOpen(false);
+                      }}
+                      disabled={playerData.coins < 100}
+                    >
                       <CoinsIcon className="h-4 w-4" /> Summon (100 coins)
                     </Button>
                   </DialogFooter>
@@ -529,7 +544,14 @@ const PlayerDashboard: React.FC<PlayerDashboardProps> = ({
                         </div>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction disabled={!selectedFriend}>
+                          <AlertDialogAction
+                            disabled={!selectedFriend}
+                            onClick={() => {
+                              if (selectedFriend) {
+                                onSendPet(selectedFriend, pet.id);
+                              }
+                            }}
+                          >
                             Send Pet
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -561,7 +583,16 @@ const PlayerDashboard: React.FC<PlayerDashboardProps> = ({
                   <p className="text-sm text-muted-foreground">
                     {item.description}
                   </p>
-                  <Button className="mt-4 w-full flex items-center justify-center gap-2">
+                  <Button
+                    className="mt-4 w-full flex items-center justify-center gap-2"
+                    onClick={() => {
+                      if (item.id === "1") onPurchaseEnergy(3, item.price);
+                      else if (item.id === "2") onPurchaseEnergy(5, item.price);
+                      else if (item.id === "3")
+                        onPurchaseEnergy(playerData.maxEnergy, item.price);
+                    }}
+                    disabled={playerData.coins < item.price}
+                  >
                     <CoinsIcon className="h-4 w-4" /> {item.price}
                   </Button>
                 </CardContent>
@@ -735,6 +766,15 @@ const PlayerDashboard: React.FC<PlayerDashboardProps> = ({
                                       coinAmount <= 0 ||
                                       coinAmount > playerData.coins
                                     }
+                                    onClick={() => {
+                                      if (
+                                        coinAmount > 0 &&
+                                        coinAmount <= playerData.coins
+                                      ) {
+                                        onSendCoins(friend.id, coinAmount);
+                                        setCoinAmount(0);
+                                      }
+                                    }}
                                   >
                                     Send Coins
                                   </Button>
